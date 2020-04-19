@@ -1,0 +1,2641 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>How to wrap C functions to OCaml</title>
+<style type="text/css" media="screen"> 
+body { background:#D2D2D2; color:#222; padding-bottom:2%; }
+code { background:#B4B4B4; color:#000; }
+div { margin:0.6em 3.8em 0.4em 3.2em; }
+pre { background:#AAA; color:#000; padding-left:0.5em; margin-left:1.2em; margin-right:8%; }
+hr { margin:2em 0; }
+#footer, #ref_licence { font-size:0.8em; margin-left:4.8em; }
+a { text-decoration:none; color:#D40; }
+a:hover { color:#A00; }
+li a { text-decoration:none; color:#094; font-weight:bold; }
+li a:hover { color:#062; }
+ul { margin-left:4%; }
+h2.keywords { display:none; }
+h2 { font-size:1.2em; }
+h3 { font-size:1.1em; }
+h2, h3 { margin-left:1.4em; margin-top:1.4em; color:#BBE; }
+h2 span, h3 span{ padding-left:0.8em; padding-right:0.6em;
+background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAAfCAIAAABCnIs2AAAAYklEQVQI102PMQ7EQBCDyMj/b/ezO+aKpLjWEiA/5xxgAGAQMbXIFKChWxm3yzu2UYGsDoS2kPYFWCGtDwxFyG0pkT44VGUuqmF34XOOIg5ozb3CDlwkqjoKkN0v1P8PAPwAwL1biuEGmGcAAAAASUVORK5CYII=") top left repeat-x;
+}
+#contact {
+width:197px; height:11px; display:block;
+background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMUAAAALAQMAAAD1FNt3AAAABlBMVEUAAwAAAADix8MfAAAAAXRSTlMAQObYZgAAAKpJREFUGNN1yyEOwkAQBdCZBJK/DolsRT2ysuvgFnCD9gZd17rKHgWO0Bsgi8TNCpKtYzbQBkS/2M2fl08UkyzPT/LvUcZZiv+fsUw+lx3Zu6/K0d/y5FGZnktfigj560g+M22TYjgmaYuOG9NYA8agm8wYpMGpGFwmTLBBGG4WcnmUM2uxpJt6JLuNAkcq+y7KSVE72Y03CFJLmPDsGS8cRArttBLGmpC8ASEaNz2aoz5XAAAAAElFTkSuQmCC") top left no-repeat;
+}
+.for_screen { }
+.for_print { display:none; }
+</style>
+
+<style type="text/css" media="print">
+body { background:#FFF; color:#000; }
+code { background:#FFF; color:#008; }
+pre { margin-left:3.0em; background:#FFF; color:#008; }
+div { margin-left:1.0em; }
+div { font-size:0.7em; }   /* size of text in the paragraphs */
+pre { font-size:0.7em; }   /* size of text in the code fragment */
+a { text-decoration:none; color:#080; }
+h1, h2, h3, h4 { color:#004; background:#0FF; }
+h2.keywords { display:none; }
+#footer, #ref_licence { font-size:0.6em; color:#777; }
+.for_screen { display:none; }
+.for_print { }
+</style>
+</head>
+<body>
+
+  <h1>How to wrap C functions to OCaml</h1>
+
+  <div>
+    This document is a small tutorial that introduces how to
+    call C functions from OCaml. Which is usefull if you want to
+    make a mixed C and OCaml application, if you want to call some
+    functions you need from a C library, or to write a complete
+    binding to a C library.
+  </div>
+
+  <h2 class="keywords">Compiling a C/OCaml library</h2>
+  <h2 class="keywords">Mixing C and OCaml</h2>
+  <h2 class="keywords">Compile C with OCaml</h2>
+  <h2 class="keywords">OCaml bindings to C library</h2>
+
+  <hr />
+
+  <h3><span>Contents</span></h3>
+
+  <ul>
+    <li><a href="#ref_hello_world"><span>Hello World</span></a></li>
+    <li><a href="#ref_quick_start"><span>Quick start</span></a></li>
+    <li><a href="#ref_compile"><span>Compiling C and OCaml together</span></a></li>
+    <li><a href="#ref_basic_types"><span>Returning Basic Types</span></a></li>
+    <li><a href="#ref_tuple_access"><span>Accessing Tuples</span></a></li>
+    <li><a href="#ref_array_access"><span>Accessing Arrays</span></a></li>
+    <li><a href="#ref_list_access"><span>Accessing Lists</span></a></li>
+    <li><a href="#ref_create_tuple"><span>Creating Tuples and Arrays</span></a></li>
+    <li><a href="#ref_create_list"><span>Creating Lists</span></a></li>
+    <li><a href="#ref_create_float_arr"><span>Creating Floats arrays</span></a></li>
+    <li><a href="#ref_enums"><span>Enums / Variants</span></a></li>
+    <li><a href="#ref_bitfield"><span>Convert C bit fields</span></a></li>
+    <li><a href="#ref_rawdata"><span>Exchanging Raw Data</span></a></li>
+    <li><a href="#ref_5params"><span>More than 5 parameters</span></a></li>
+    <li><a href="#ref_exception"><span>Raising Exceptions</span></a></li>
+    <li><a href="#ref_ptr"><span>Pointers to C structures</span></a></li>
+    <li><a href="#ref_finalise"><span>Finalisation of C objects</span></a></li>
+    <li><a href="#ref_custom"><span>Custom Operations Structure</span></a></li>
+    <li><a href="#ref_custfinal"><span>Custom Finalisation</span></a></li>
+    <li><a href="#ref_constvrnt"><span>Variants with arguments</span></a></li>
+    <li><a href="#ref_option"><span>The type 'a option</span></a></li>
+    <li><a href="#ref_optlabel"><span>Optional labeled parameter</span></a></li>
+    <li><a href="#ref_plmvrnt"><span>Polymorphic Variants</span></a></li>
+    <li><a href="#ref_linklib"><span>Linking against a library</span></a></li>
+    <li><a href="#ref_mlfromc"><span>Call Caml functions from C</span></a></li>
+    <li><a href="#ref_bootfromc"><span>Start-up from C</span></a></li>
+    <li><a href="#ref_cplusplus"><span>Mixing with C++</span></a></li>
+    <li><a href="#ref_mswindows"><span>MS Windows</span></a></li>
+    <li><a href="#ref_conclusion"><span>Conclusion, going further</span></a></li>
+    <li><a href="#ref_licence"><span>Licence of this document</span></a></li>
+    <li><a href="#ref_version"><span>Version of this document</span></a></li>
+  <!--
+    <li><a href="#ref_misc"><span>Miscellaneous</span></a></li>
+  -->
+  </ul>
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_hello_world"><span>Hello World</span></h3>
+
+  <div>The two files "hello.ml" and "hello_stubs.c":</div>
+
+<pre>
+external print_hello: unit -&gt; unit = "caml_print_hello"
+
+let () =
+  print_hello ()
+</pre>
+
+<pre>
+#include &lt;stdio.h&gt;
+#include &lt;caml/mlvalues.h&gt;
+
+CAMLprim value
+caml_print_hello(value unit)
+{
+    printf("Hello\n");
+    return Val_unit;
+}
+</pre>
+
+  <div>Compile and run:</div>
+<pre>
+$ ocamlopt -o hello.opt hello.ml hello_stubs.c
+$ ./hello.opt 
+Hello
+</pre>
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_quick_start"><span>Quick start</span></h3>
+
+  <div>
+    Let's start with the simpler case one can find,
+    calling a C function with an integer parameter.
+    This is achieved in an .ml file by this line:
+  </div>
+<pre>
+external send_an_int: int -&gt; unit = "get_an_int"
+</pre>
+  <div>
+    The external keyword tells the compiler that the function comes
+    from outside the OCaml world. The compiler needs the function
+    name which will be seen from the OCaml area, its type, and the name
+    of the C function which will be called.
+  </div>
+
+  <div>
+    In the C source file, define a C function whose name is that
+    given in the OCaml side between quotes. This function must have return type
+    <code>CAMLprim value</code> and its parameter type has to be <code>value</code>.
+    All parameters given to C functions from OCaml are of type <code>value</code>.
+    The include header <code>&lt;caml/mlvalues.h&gt;</code> provides conversion
+    macros to convert the type <code>value</code> to C native types.
+    In this case to convert to a C integer, that macro is <code>Int_val()</code>.
+    Then as the return value of the OCaml function is <code>unit</code>, the C
+    function have to return a unit, which is done with the macro <code>Val_unit</code>.
+  </div>
+<pre>
+#include &lt;stdio.h&gt;
+#include &lt;caml/mlvalues.h&gt;
+
+CAMLprim value
+get_an_int( value v )
+{
+    int i;
+    i = Int_val(v);
+    printf("%d\n", i);
+    return Val_unit;
+}
+</pre>
+  <div>
+    Of course, think to include the C headers you need, the standard library
+    or other libraries.
+  </div>
+
+
+
+  <!-- ========================================================= -->
+
+  <h3 id="ref_compile"><span>Compiling C and OCaml together</span></h3>
+
+  <div>
+    Then to compile these two files together, here are the command lines
+    you will need:
+  </div>
+<pre>
+ocamlc -i funs.ml &gt; funs.mli
+ocamlc -c funs.mli
+ocamlc -c funs.ml
+ocamlc -c wrap.c
+ocamlmklib  -o  wrap_stubs  wrap.o
+ocamlc -a  -custom  -o funs.cma  funs.cmo  -dllib dllwrap_stubs.so
+</pre>
+  <div>
+    But it will be more handy with a basic <code>Makefile</code>:
+  </div>
+<pre>
+wrap.o: wrap.c
+        ocamlc -c $&lt;
+
+dllwrap_stubs.so: wrap.o
+        ocamlmklib  -o  wrap_stubs  $&lt;
+
+funs.mli: funs.ml
+        ocamlc -i $&lt; &gt; $@
+
+funs.cmi: funs.mli
+        ocamlc -c $&lt;
+
+funs.cmo: funs.ml funs.cmi
+        ocamlc -c $&lt;
+
+funs.cma:  funs.cmo  dllwrap_stubs.so
+        ocamlc -a  -o $@  $&lt;  -dllib -lwrap_stubs
+
+funs.cmx: funs.ml funs.cmi
+        ocamlopt -c $&lt;
+
+funs.cmxa:  funs.cmx  dllwrap_stubs.so
+        ocamlopt -a  -o $@  $&lt;  -cclib -lwrap_stubs
+
+clean:
+        rm -f *.[oa] *.so *.cm[ixoa] *.cmxa
+</pre>
+  <div>
+    And if you use a library in the file wrap.c, you need to add some
+    extra compilation instructions to link against the library,
+    which is described in
+    <span class="for_screen">
+      <a href="#ref_linklib">another paragraph below</a>.
+    </span>
+    <span class="for_print">
+      the section <strong>Linking against a library</strong>.
+    </span>
+  </div>
+  <div>
+    Just a detail about the command <code>ocamlc -c wrap.c</code>,
+    you can replace this line by one of the line below for cases when
+    you wish to give extra arguments to gcc:
+  </div>
+<pre>
+ocamlc -c -cc "gcc -o wrap.o" wrap.c
+gcc -c -I"`ocamlc -where`" wrap.c
+</pre>
+  <div>
+    Also I would recommand trying to replace the command
+    <code>ocamlc -c wrap.c</code> by <code>ocamlc -verbose -c wrap.c</code>
+    so that the ocamlc compiler will print out all the internal commands
+    that it will proceed.
+  </div>
+
+  <div>
+    Then you can test the result opening the .cma file in the top-level:
+  </div>
+<pre>
+% ocaml funs.cma
+
+# open Funs;;
+# send_an_int 9 ;;
+9
+- : unit = ()
+</pre>
+
+  <div>
+    Or at your option from a test script:
+  </div>
+<pre>
+#load "funs.cma" ;;
+open Funs ;;
+
+let () =
+  send_an_int 5;
+;;
+</pre>
+
+  <div>
+    You also have the option, if you just want to build a C-OCaml mixed application
+    without to build an intermediate .cma / .cmxa binding, to directly compile the
+    objects together:
+  </div>
+<pre>
+make wrap.o
+make funs.cmx
+ocamlopt wrap.o funs.cmx -o myapp
+./myapp
+</pre>
+
+  <hr />
+
+  <div>
+    OK, Now if everything works, let's see how to convert the other types.
+    floating point numbers, and strings:
+  </div>
+<pre>
+external send_a_float: float -&gt; unit = "get_a_float"
+external send_a_string: string -&gt; unit = "get_a_string"
+</pre>
+
+<pre>
+CAMLprim value
+get_a_float( value v )
+{
+    float f;
+    f = Double_val(v);
+    printf("%f\n", f);
+    return Val_unit;
+}
+
+CAMLprim value
+get_a_string( value v )
+{
+    const char *s;
+    s = String_val(v);
+    printf("%s\n", s);
+    return Val_unit;
+}
+</pre>
+  <div>
+    The <code>Double_val()</code> conversion macro can be used for both
+    C floats and C doubles.
+  </div>
+
+  <div>
+    The <code>Bytes_val()</code> conversion macro can be used for the
+    new type <code>bytes</code>.
+  </div>
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_basic_types"><span>Returning Basic Types</span></h3>
+
+  <div>
+    Now let's see how to return these basic types from C to OCaml.
+  </div>
+<pre>
+external get_an_int: unit -&gt; int = "send_an_int"
+</pre>
+
+<pre>
+CAMLprim value
+send_an_int( value unit )
+{
+    int i;
+    i = 6;
+    return Val_int(i);
+}
+</pre>
+  <div>
+    The conversion macro <code>Val_int()</code> is similar to the macros seen
+    before, it converts a C integer into an OCaml integer value.
+  </div>
+
+  <div>
+    For cases where C code uses long integers, instead of <code>Int_val()</code>
+    just use <code>Long_val()</code>.
+  </div>
+  <div>
+    In the same way you can convert an OCaml boolean to a C integer with
+    <code>Bool_val()</code>, and a C integer to an OCaml boolean with
+    <code>Val_bool()</code>. For convenience there are also 
+    macros <code>Val_true</code> and <code>Val_false</code>.
+  </div>
+
+
+  <h3><span>Allocated Types</span></h3>
+
+  <div>
+    It goes a bit different for floats and strings than ints, since these types
+    have to be allocated for OCaml, and one thing important to know in OCaml is
+    that when an allocation is done (a new value created), a garbage collection may
+    be done. If the allocation is given at the end point in the C <code>return</code>
+    statement, all is fine. But notice that in other cases which will be seen below,
+    additional statements have to be used.
+  </div>
+
+<pre>
+external get_a_float: unit -&gt; float = "send_a_float"
+external get_a_string: unit -&gt; string = "send_a_string"
+</pre>
+
+<pre>
+#include &lt;caml/alloc.h&gt;
+
+CAMLprim value
+send_a_float( value unit )
+{
+    double d;
+    d = 2.6;
+    return caml_copy_double(d);
+}
+
+CAMLprim value
+send_a_string( value unit )
+{
+    char *s = "the walking camel";
+    return caml_copy_string(s);
+}
+</pre>
+
+  <div>
+    In more complex functions where input values are still used after a new OCaml
+    value is allocated, there is a risk that the input value cannot be used because
+    it has been garbage collected when the new OCaml value is allocated.
+    In such cases you have to use the macros <code>CAMLparam<em>N</em>()</code>
+    (where <em>N</em> is the number of parameters) at the beginning of the function
+    and at the end instead of <code>return</code> use <code>CAMLreturn()</code>.
+    And for local allocated values, use the declaration
+    <code>CAMLlocal<em>N</em>()</code>. For example you could write the previous
+    functions "send_a_float" and "send_a_string" in this way:
+  </div>
+
+<pre>
+CAMLprim value
+send_a_float( value unit )
+{
+    CAMLparam1(unit);
+    CAMLlocal1(ml_f);
+    double d;
+    d = 2.6;
+    ml_f = caml_copy_double(d);
+    CAMLreturn(ml_f);
+}
+
+CAMLprim value
+send_a_string( value unit )
+{
+    CAMLparam1(unit);
+    CAMLlocal1(ml_s);
+    char *s = "the walking camel";
+    ml_s = caml_copy_string(s);
+    CAMLreturn(ml_s);
+}
+</pre>
+  <div>
+    When you are not sure if you need to use these macro or not, it's better to use
+    these to stay in peace with the garbage collector, since using these macros won't
+    cause problems, even if they are not needed. That's why you will see below
+    cases where they are used while not strictly needed. Moreover, a lot of OCaml
+    users recommend always using these to avoid the risk of forgetting to use them
+    when they are needed.
+  </div>
+
+  <div>
+    Also when using this set of macros, add this header where they are defined:
+  </div>
+<pre>
+#include &lt;caml/memory.h&gt;
+</pre>
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h2><span>Constructed Types</span></h2>
+
+  <div>
+    Now let's see how to inspect and construct more complex structures like tuples,
+    arrays, lists and records.
+  </div>
+
+
+
+  <!-- ========================================================= -->
+
+  <h3 id="ref_tuple_access"><span>Accessing Tuples</span></h3>
+
+  <div>
+    To access the content of an OCaml tuple, the <code>Field()</code> macro is 
+    provided to access each piece of the tuple. Then each field is as usual of 
+    type value which needs to be converted to native C types.
+  </div>
+<pre>
+external inspect_tuple: int * float * string -&gt; unit = "inspect_tuple"
+</pre>
+
+<pre>
+CAMLprim value
+inspect_tuple( value ml_tuple )
+{
+    CAMLparam1( ml_tuple );
+    CAMLlocal3( vi, vf, vs );
+
+    vi = Field(ml_tuple, 0);
+    vf = Field(ml_tuple, 1);
+    vs = Field(ml_tuple, 2);
+
+    printf("%d\n", Int_val(vi));
+    printf("%f\n", Double_val(vf));
+    printf("%s\n", String_val(vs));
+
+    CAMLreturn( Val_unit );
+}
+</pre>
+
+  <div>
+    You can check the result is as expected from the top-level:
+  </div>
+<pre>
+# inspect_tuple (3, 2.4, "functional") ;;
+3
+2.400000
+functional
+- : unit = ()
+</pre>
+
+  <div>
+    Or the C part may have been written in a more concise way to get the same result:
+  </div>
+<pre>
+CAMLprim value
+inspect_tuple( value ml_tuple )
+{
+    printf("%d\n", Int_val(Field(ml_tuple,0)));
+    printf("%f\n", Double_val(Field(ml_tuple,1)));
+    printf("%s\n", String_val(Field(ml_tuple,2)));
+    return Val_unit;
+}
+</pre>
+  <div>
+    (Since there are no allocation here.)
+  </div>
+
+  <div>
+    Accessing fields of a record is exactly the same than for a tuple:
+  </div>
+<pre>
+type rec_t = { a:int; b:float; c:string }
+external inspect_record: rec_t -&gt; unit = "inspect_record"
+</pre>
+
+<pre>
+CAMLprim value
+inspect_record( value ml_record )
+{
+    printf("%d\n", Int_val(Field(ml_record, 0)));
+    printf("%g\n", Double_val(Field(ml_record, 1)));
+    printf("%s\n", String_val(Field(ml_record, 2)));
+    return Val_unit;
+}
+</pre>
+  <div>
+    The index number of the fields are ordered as the fields appear in the OCaml
+    declaration of the record type.
+  </div>
+
+<pre>
+# inspect_record {a=26; b=4.3; c="camelids folks" } ;;
+26
+4.3
+camelids folks
+- : unit = ()
+</pre>
+  <div>
+    There is though a particular case when all the fields of the record are of
+    type float, in this case the record is seen from C as a float array, see below
+    for this particular case.
+  </div>
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_array_access"><span>Accessing Arrays</span></h3>
+
+
+  <div>
+    Accessing fields of arrays is very similar:
+  </div>
+<pre>
+external inspect_int_array: int array -&gt; unit = "inspect_int_array"
+</pre>
+
+<pre>
+CAMLprim value
+inspect_int_array( value ml_array )
+{
+    CAMLparam1( ml_array );
+    int i, len;
+    len = Wosize_val(ml_array);
+    for (i=0; i &lt; len; i++)
+    {
+        printf("%d\n", Int_val(Field(ml_array, i)));
+    }
+
+    CAMLreturn( Val_unit );
+}
+</pre>
+  <div>
+    The only trick here is to get the number of elements in the array.
+    And also if the array is a <code>float array</code> the macros to
+    get the number of elements and to access the content are a bit different:
+  </div>
+
+<pre>
+external inspect_float_array: float array -&gt; unit = "inspect_float_array"
+</pre>
+
+<pre>
+CAMLprim value
+inspect_float_array( value ml_float_array )
+{
+    CAMLparam1( ml_float_array );
+    int i, len;
+    len = Wosize_val(ml_float_array) / Double_wosize;
+    for (i=0; i &lt; len; i++)
+    {
+        printf("%g\n", Double_field(ml_float_array, i));
+    }
+
+    CAMLreturn( Val_unit );
+}
+</pre>
+
+  <div>
+    If you test these two functions:
+  </div>
+<pre>
+# inspect_int_array [| 2; 4; 3; 1; 9 |] ;;
+2
+4
+3
+1
+9
+- : unit = ()
+
+# inspect_float_array [| 2.4; 5.8; 6.9; 12.2; 32.8 |] ;;
+2.4
+5.8
+6.9
+12.2
+32.8
+- : unit = ()
+</pre>
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_list_access"><span>Accessing Lists</span></h3>
+
+  <div>
+    Now here is how you can access the content of an OCaml list:
+  </div>
+<pre>
+external inspect_list: string list -&gt; unit = "inspect_list"
+</pre>
+
+<pre>
+CAMLprim value
+inspect_list( value ml_list )
+{
+    CAMLparam1( ml_list );
+    CAMLlocal1( head );
+
+    while ( ml_list != Val_emptylist )
+    {
+        head = Field(ml_list, 0);  /* accessing the head */
+        printf("%s\n", String_val(head));
+        ml_list = Field(ml_list, 1);  /* point to the tail for next loop */
+    }
+
+    CAMLreturn( Val_unit );
+}
+</pre>
+
+  <div>
+    Test it from the top-level:
+  </div>
+<pre>
+# inspect_list ["hello"; "you"; "world"; "camelids"] ;;
+hello
+you
+world
+camelids
+- : unit = ()
+</pre>
+  <div>
+    As you can see lists are constructed as pair of items, the first item in the
+    pair is the head, and the second is the tail, which can be another list or
+    the empty list which is written as <code>[]</code> on the OCaml side, and
+    <code>Val_emptylist</code> on the C side.
+  </div>
+
+  <div>
+    As an illustration of this you can test from the top-level typing these commands:
+  </div>
+<pre>
+# external trans: (int * (int * (int * (int * int)))) -&gt; int list = "%identity" ;;
+external trans : int * (int * (int * (int * int))) -&gt; int list = "%identity"
+
+# trans (1, (2, (3, (4, 0)))) ;;
+- : int list = [1; 2; 3; 4]
+</pre>
+  <div>
+    Here "%identity" is a built-in OCaml function which just allows to convert
+    a type to another, keeping its internal representation identical.
+  </div>
+  <div>
+    And you can also notice here that the last integer given is 0, since
+    as you can see reading the <code>&lt;caml/mlvalues.h&gt;</code> header that
+    <code>Val_emptylist</code> is defined as <code>Val_int(0)</code>.
+  </div>
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_create_tuple"><span>Creating Tuples and Arrays</span></h3>
+
+  <div>
+    Now let's see how to construct a tuple on the C side and returning it
+    to OCaml:
+  </div>
+<pre>
+external create_tuple: 'a -&gt; 'b -&gt; 'c -&gt; 'a * 'b * 'c = "create_tuple"
+</pre>
+
+<pre>
+CAMLprim value
+create_tuple( value a, value b, value c )
+{
+    CAMLparam3( a, b, c );
+    CAMLlocal1( abc );
+
+    abc = caml_alloc(3, 0);
+
+    Store_field( abc, 0, a );
+    Store_field( abc, 1, b );
+    Store_field( abc, 2, c );
+
+    CAMLreturn( abc );
+}
+</pre>
+
+<pre>
+# create_tuple 38 'G' "www.ifrc.org" ;;
+- : int * char * string = (38, 'G', "www.ifrc.org")
+</pre>
+
+  <div>
+    The first parameter of <code>caml_alloc()</code> is the number of fields,
+    and the second one indicates the tag of the value, here it is 0 because
+    for ordinary ocaml values like tuples there is no tags needed.
+  </div>
+
+  <div>
+    And it works the same for records, as we have seen they have the same
+    internal representation as tuples, except when the record contains only floats.
+  </div>
+
+  <div>
+    This also works for arrays except that you have to make sure that all
+    the elements of the array have the same type. All arrays can be created
+    this way except
+    <code>float array</code>s that have a different internal representation.
+  </div>
+
+  <div>
+    In the same manner than the list, you can verify that records and tuples have the
+    same internal representation with:
+  </div>
+<pre>
+# type rec_b = { i:int; c:char; s:string } ;;
+type rec_b = { i : int; c : char; s : string; }
+
+# external trans: rec_b -&gt; int * char * string = "%identity" ;;
+external trans : rec_b -&gt; int * char * string = "%identity"
+
+# trans { i=38; c='G'; s="www.ifrc.org" } ;;
+- : int * char * string = (38, 'G', "www.ifrc.org")
+</pre>
+
+<pre>
+# external create_rec_b: int -&gt; char -&gt; string -&gt; rec_b = "create_tuple" ;;
+external create_rec_b : int -&gt; char -&gt; string -&gt; rec_b = "create_tuple"
+
+# create_rec_b 38 'G' "www.ifrc.org" ;;
+- : rec_b = {i = 38; c = 'G'; s = "www.ifrc.org"}
+</pre>
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_create_list"><span>Creating Lists</span></h3>
+
+  <div>
+    At this point you should be able to find how to build an OCaml list form C.
+    Here is an example:
+  </div>
+
+<pre>
+external string_explode: string -&gt; char list = "create_list"
+</pre>
+
+<pre>
+CAMLprim value create_list( value ml_str )
+{
+    CAMLparam1( ml_str );
+    CAMLlocal2( cli, cons );
+
+    const char *str = String_val(ml_str);
+    int len = caml_string_length(ml_str);
+    int i;
+
+    cli = Val_emptylist;
+
+    for (i = len - 1; i &gt;= 0; i--)
+    {
+        cons = caml_alloc(2, 0);
+
+        Store_field( cons, 0, Val_int(str[i]) );  // head
+        Store_field( cons, 1, cli );              // tail
+
+        cli = cons;
+    }
+
+    CAMLreturn( cli );
+}
+</pre>
+
+<pre>
+# string_explode "OCaml" ;;
+- : char list = ['O'; 'C'; 'a'; 'm'; 'l']
+</pre>
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_create_float_arr"><span>Creating Floats arrays</span></h3>
+
+  <div>
+    And as the floats arrays are particular, they are a bit different to create
+    from C, notice both the length trick and the tag when allocating:<br />
+    <code>float_array = caml_alloc(length * Double_wosize, Double_array_tag);</code>
+    <br />
+    And to store elements use <code>Store_double_field()</code> instead of
+    <code>Store_field()</code>, and there's no need to use the
+    <code>caml_copy_double</code>
+    in it.
+  </div>
+
+  <hr />
+
+
+  <h3 id="ref_enums"><span>Enums / Variants</span></h3>
+
+  <div>
+    For wrapping C enums, or for wrapping params defined as constant with
+    <code>#define</code> the method is the same.
+    Both can be wrapped on OCaml enumerated variants with constants constructors
+    without parameters. From the C site the constructors is represented as integers
+    ordered from 0 to (N - 1) (where N is the number of constructors in the variant
+    type).
+    So basically you can just use a <code>switch</code> or an array containing all
+    these values make match the C value.
+    For instance:
+  </div>
+
+<pre>
+type moving =
+  | WALKING
+  | RUNNING
+  | SWIMMING
+  | FLYING
+
+external send_enum: moving -&gt; unit = "wrapping_enum_ml2c"
+</pre>
+
+<pre>
+typedef enum _moving {
+    WALKING,
+    RUNNING,
+    SWIMMING,
+    FLYING
+} moving;
+
+CAMLprim value
+wrapping_enum_ml2c( value v )
+{
+    moving param;
+    switch (Int_val(v)) {
+        case 0: param = WALKING; break;
+        case 1: param = RUNNING; break;
+        case 2: param = SWIMMING; break;
+        case 3: param = FLYING; break;
+    }
+    switch (param) {
+        case WALKING:  puts("Walking"); break;
+        case RUNNING:  puts("Running"); break;
+        case SWIMMING: puts("Swimming"); break;
+        case FLYING:   puts("Flying"); break;
+    }
+    return Val_unit;
+}
+</pre>
+
+  <div>
+    Here it is very important to make match the good number in the switch
+    according to the place in the enumeration in the OCaml variant.
+  </div>
+
+  <div>
+    To send back an constant variant from C to OCaml, just return
+    <code>Val_int()</code>
+    with its corresponding index.
+  </div>
+
+  <div>
+    If there are a lots of possible values in the enumeration (or possible
+    constants), you can also use an array instead of a switch:
+  </div>
+
+<pre>
+static const moving table_moving[] = {
+    WALKING,
+    RUNNING,
+    SWIMMING,
+    FLYING
+};
+
+CAMLprim value
+wrapping_enum_ml2c( value v )
+{
+    moving param;
+    param = table_moving[Long_val(v)];
+
+    switch (param) {
+        case WALKING:  puts("Walking"); break;
+        case RUNNING:  puts("Running"); break;
+        case SWIMMING: puts("Swimming"); break;
+        case FLYING:   puts("Flying"); break;
+    }
+    return Val_unit;
+}
+</pre>
+
+  <div>
+    Here you need to be sure not to try to access to an index in the association
+    table after the last one. Which could occur if you add an item on the OCaml
+    side, and forget to add it also in the array on the C side.<br />
+    Something you could do is checking if the index requested is not greater
+    than the last one, and if it is raising an exception.
+  </div>
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_bitfield"><span>Convert C bit fields</span></h3>
+
+  <div>
+    Imagine you have a C bit field defined as below in your header file:
+  </div>
+<pre>
+#define ShiftMask      (1&lt;&lt;0)
+#define LockMask       (1&lt;&lt;1)
+#define ControlMask    (1&lt;&lt;2)
+#define Mod1Mask       (1&lt;&lt;3)
+</pre>
+
+  <div>
+    to get it wrapped, the most common solution is to convert it
+    to a variant list:
+  </div>
+<pre>
+type state =
+  | ShiftMask
+  | LockMask
+  | ControlMask
+  | Mod1Mask
+
+type state_mask = state list
+</pre>
+
+  <div>
+    As previously build a table with the C values in the same <em>exact</em>
+    order than in the OCaml variant, and iter all items of the caml list
+    to set the C bit field accordingly:
+  </div>
+<pre>
+static const int state_mask_table[] = {
+    ShiftMask,
+    LockMask,
+    ControlMask,
+    Mod1Mask
+};
+
+static inline int
+state_mask_val( value mask_list )
+{
+    int c_mask = 0; 
+    while ( mask_list != Val_emptylist )
+    {
+        value head = Field(mask_list, 0);
+        c_mask |= state_mask_table[Long_val(head)];
+        mask_list = Field(mask_list, 1);
+    }
+    return c_mask;
+}
+</pre>
+
+  <div>
+    And to convert the C bit field to the OCaml variant list,
+    you need to test the bit of every field, and if it matches
+    push the associated OCaml value to the list:
+  </div>
+<pre>
+#define Val_ShiftMask    Val_int(0)
+#define Val_LockMask     Val_int(1)
+#define Val_ControlMask  Val_int(2)
+#define Val_Mod1Mask     Val_int(3)
+
+static value
+Val_state_mask( int c_mask )
+{
+    CAMLparam0();
+    CAMLlocal2(li, cons);
+    li = Val_emptylist;
+
+    if (c_mask &amp; ShiftMask) {
+        cons = caml_alloc(2, 0);
+        Store_field( cons, 0, Val_ShiftMask );
+        Store_field( cons, 1, li );
+        li = cons;
+    }
+    if (c_mask &amp; LockMask) {
+        cons = caml_alloc(2, 0);
+        Store_field( cons, 0, Val_LockMask );
+        Store_field( cons, 1, li );
+        li = cons;
+    }
+    if (c_mask &amp; ControlMask) {
+        cons = caml_alloc(2, 0);
+        Store_field( cons, 0, Val_ControlMask );
+        Store_field( cons, 1, li );
+        li = cons;
+    }
+    if (c_mask &amp; Mod1Mask) {
+        cons = caml_alloc(2, 0);
+        Store_field( cons, 0, Val_Mod1Mask );
+        Store_field( cons, 1, li );
+        li = cons;
+    }
+
+    CAMLreturn(li);
+}
+</pre>
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_rawdata"><span>Exchanging Raw Data</span></h3>
+
+  <div>
+    If you have to handle raw data, you can do so using OCaml strings
+    wherever there are array of bytes or void* in C.<br />
+    On the OCaml side, strings are able to handle any character, included
+    the possible '\000', but if you use <code>caml_copy_string()</code>
+    to copy the raw data it will end at the first Null character, because
+    it considers it as the string terminator.<br />
+    So you should use <code>caml_alloc_string()</code> and <code>memcpy()</code>:
+  </div>
+<pre>
+#include &lt;caml/mlvalues.h&gt;
+#include &lt;caml/alloc.h&gt;
+#include &lt;string.h&gt;
+
+CAMLprim value get_raw_data( value unit )
+{
+    CAMLlocal1( ml_data );
+    char * raw_data;
+    int data_len;
+    /*
+     * initialise raw_data and data_len here 
+     */
+    ml_data = caml_alloc_string(data_len);
+    memcpy( String_val(ml_data), raw_data, data_len );
+    return ml_data;
+}
+</pre>
+
+  <div>
+    Notice that here it is possible not to use CAMLparam/CAMLreturn even if there 
+    is an ocaml alloc, because there aren't any ocaml values used *after* the 
+    ocaml alloc.
+    In your code if there are some, do put the CAMLparam/CAMLreturn&nbsp;!
+  </div>
+  <div>
+    If the data chunk represents something like a matrix (an image for example)
+    you will probably prefer to use an OCaml bigarray which is a very handy
+    data structure for this task because it shares the same memory layout than
+    in C.
+  </div>
+
+  <hr />
+
+  <div>
+    In your code, if the buffer <code>raw_data</code> is C mallocated and then 
+    filled by some process, it is even possible to only allocate an ocaml string
+    and then get a pointer to the first byte of this ocaml string.
+    So in such cases you will save one C malloc(), one C free(), and the memcpy()
+    call.
+  </div>
+<pre>
+CAMLprim value get_raw_data( value some_param )
+{
+    CAMLparam1( some_param );
+    CAMLlocal1( ml_data );
+    const char * raw_data;
+    int data_len;
+    /* do initialise data_len */
+    ml_data = caml_alloc_string( data_len );
+    raw_data = String_val(ml_data);
+    /* 
+       Now you can use raw_data and fill it as if it was
+       a buffer of type (char *) of length data_len.
+       (once given to ocaml it will be garbage-collected as every ocaml value)
+    */
+    CAMLreturn( ml_data );
+}
+</pre>
+  <div>
+    If you need to access to one byte of the buffer like this
+    <code>raw_data[n]</code>,
+    it is also possible to make the same access directly on the ocaml value like this
+    <code>Byte(ml_data, n)</code>.<br />
+    (And if raw_data was of type <code>(unsigned char *)</code> replace
+    <code>Byte()</code> by
+    <code>Byte_u()</code>.)
+  </div>
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_5params"><span>More than 5 parameters</span></h3>
+
+  <div>
+    There is a special case for OCaml functions that have more than 5 parameters,
+    in such cases you have to provide 2 C functions, as you can see below:
+  </div>
+<pre>
+external lots_of_params: p1:int -&gt; p2:int -&gt; p3:int -&gt;
+                         p4:int -&gt; p5:int -&gt; p6:int -&gt; p7:int -&gt; unit
+    = "lotprm_bytecode"
+      "lotprm_native"
+</pre>
+
+<pre>
+CAMLprim value
+lotprm_native( value p1, value p2, value p3,
+               value p4, value p5, value p6, value p7 )
+{
+    printf("1(%d) 2(%d) 3(%d) 4(%d) 5(%d) 6(%d) 7(%d)\n",
+           Int_val(p1), Int_val(p2), Int_val(p3),
+           Int_val(p4), Int_val(p5), Int_val(p6), Int_val(p7) );
+    return Val_unit;
+}
+
+CAMLprim value
+lotprm_bytecode( value * argv, int argn )
+{
+    return lotprm_native( argv[0], argv[1], argv[2],
+                          argv[3], argv[4], argv[5], argv[6] );
+}
+</pre>
+  <div>
+    And as you can see the function that will be called in bytecode
+    compiled programs have a different prototype.
+    Then in the bytecode function, the common and easiest solution
+    is to call the native one.
+  </div>
+
+  <div>
+    And another detail for those functions when you need to protect the values from
+    the garbage collector, the macros CAMLparam<em>N</em>() exist only for
+    <em>N</em> from 1 to 5.
+    Then put the 5 first parameters in CAMLparam5(), and use additional
+    CAML<span style="color:#05C">x</span>param<em>N</em>()
+    macros which exist too with <em>N</em> from 1 to 5.
+    So for example if you have 13 parameters, use one CAMLparam5(), one
+    CAMLxparam5() and one CAMLxparam3().
+    You have to use only one macro without the "x" in the middle, and you can
+    use as many of the one with the "x".<br />
+    Here is the same function with these macros:
+  </div>
+<pre>
+CAMLprim value
+lotprm_native( value p1, value p2, value p3,
+               value p4, value p5, value p6, value p7 )
+{
+    CAMLparam5(p1, p2, p3, p4, p5);
+    CAMLxparam2(p6, p7);
+
+    printf("1(%d) 2(%d) 3(%d) 4(%d) 5(%d) 6(%d) 7(%d)\n",
+           Int_val(p1), Int_val(p2), Int_val(p3),
+           Int_val(p4), Int_val(p5), Int_val(p6), Int_val(p7) );
+
+    CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+lotprm_bytecode( value * argv, int argn )
+{
+    return lotprm_native( argv[0], argv[1], argv[2],
+                          argv[3], argv[4], argv[5], argv[6] );
+}
+</pre>
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_exception"><span>Raising Exceptions</span></h3>
+
+  <div>
+    Raising the predefined exceptions of OCaml is very easy.
+    For example for raising the <code>Invalid_argument</code> exception,
+    the C function is:
+  </div>
+<pre>
+    caml_invalid_argument("Error message");
+</pre>
+  <div>
+    And to raise an exception <code>Failure</code>:
+  </div>
+<pre>
+    caml_failwith("Error message");
+</pre>
+  <div>
+    The header file to include when using these functions is:
+  </div>
+<pre>
+#include &lt;caml/fail.h&gt;
+</pre>
+
+  <div>
+    And if your module defines custom exceptions, it is possible to raise these
+    from C as explained
+    <span class="for_screen">
+      <a href=
+      "http://caml.inria.fr/pub/docs/manual-ocaml-4.00/manual033.html#s:register-exn"
+      >here in the official manual</a>
+    </span>
+    <span class="for_print">
+      on the page<br />
+      <a href="#">http://caml.inria.fr/pub/docs/manual-ocaml-4.00/manual033.html</a>
+      <br />in section <strong>19.7.3</strong>
+    </span>.
+  </div>
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_ptr"><span>Pointers to C structures</span></h3>
+
+  <div>
+    Often C libraries use types defined from structures or pointers
+    to structures. OCaml can safely handle pointers to memory allocated areas.
+    To achieve this task, the simpler method is to cast your pointer to and
+    from the type <code>(value)</code> which can handle pointers.<br />
+    The only disadvantage of this simple method is that you have to free your
+    allocated value from the C side of your program.&nbsp; Usually this means
+    providing a function to free the allocated memory with interface to that
+    on the OCaml side.
+    In case of a library this is equivalent to using the destroy function
+    associated with a particular type.
+  </div>
+
+<pre>
+typedef struct _obj_st {
+    double d;
+    int i;
+    char c;
+} obj_st;
+
+typedef obj_st *obj_p;
+
+
+CAMLprim value
+wrapping_ptr_ml2c( value d, value i, value c )
+{
+    obj_p my_obj;
+    my_obj = malloc(sizeof(obj_st));
+    my_obj-&gt;d = Double_val(d);
+    my_obj-&gt;i = Int_val(i);
+    my_obj-&gt;c = Int_val(c);
+    return (value) my_obj;
+}
+
+CAMLprim value
+dump_ptr( value ml_ptr )
+{
+    obj_p my_obj;
+    my_obj = (obj_p) ml_ptr;
+    printf(" d: %g\n i: %d\n c: %c\n",
+            my_obj-&gt;d,
+            my_obj-&gt;i,
+            my_obj-&gt;c );
+    return Val_unit;
+}
+
+CAMLprim value
+free_ptr( value ml_ptr )
+{
+    obj_p my_obj;
+    my_obj = (obj_p) ml_ptr;
+    free(my_obj);
+    return Val_unit;
+}
+</pre>
+
+  <div>
+    Then the pointer can be hidden in an abstract type on the OCaml side:
+  </div>
+<pre>
+type t
+external abs_get: float -&gt; int -&gt; char -&gt; t = "wrapping_ptr_ml2c"
+external print_t: t -&gt; unit = "dump_ptr"
+external free_t: t -&gt; unit = "free_ptr"
+</pre>
+
+<pre>
+# let ty = abs_get 255.9 107 'K' in
+  print_t ty;
+  free_t ty;
+  ;;
+ d: 255.9
+ i: 107
+ c: K
+- : unit = ()
+</pre>
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_finalise"><span>Finalisation of C objects</span></h3>
+
+
+  <div>
+    To finalise those abstract type that represent C object, don't try
+    to use the <code>Gc.finalise</code> like this:
+  </div>
+<pre>
+let abs_get f i c =
+  let t = abs_get f i c in
+  Gc.finalise free_t t;     (* doesn't work *)
+  (t)
+;;
+</pre>
+  <div>
+    because this function does only work with heap-allocated values.<br />
+    But you can bypass this by creating a new type that mixes the abstract type
+    with heap-allocated value:
+  </div>
+<pre>
+type u = {t:t; s:string}
+
+let free_t v = free_t v.t ;;
+let print_t v = print_t v.t ;;
+
+let abs_get f i c =
+  let t = abs_get f i c in
+  let u = {t=t; s=" "} in
+  Gc.finalise free_t u;
+  (u)
+;;
+</pre>
+  <div>
+    This is a simple way, but there is an other "more official" way to
+    achieve the same effect from the C side,
+    which is described in the next paragraph.
+  </div>
+
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_custom"><span>Custom Operations Structure</span></h3>
+
+
+  <div>
+    You can use the function <code>caml_alloc_custom()</code> to store datas
+    of a given size.
+    The size of this data is given as the second parameter of this function.
+    The first parameter is a <code>custom_operations</code> structure,
+    which can be used to provide functions associated with
+    this ocaml value.
+    In the example below no functions are associated, so the 
+    <code>custom_operations</code> structure is filled with the default functions
+    (which are in fact defined as <code>NULL</code> in
+    <code>&lt;caml/custom.h&gt;</code>)
+  </div>
+
+<pre>
+#include &lt;caml/custom.h&gt;
+#include &lt;string.h&gt;
+
+typedef struct _obj_st {
+    double d;
+    int i;
+    char c;
+} obj_st;
+
+static struct custom_operations objst_custom_ops = {
+    identifier: "obj_st handling",
+    finalize:    custom_finalize_default,
+    compare:     custom_compare_default,
+    hash:        custom_hash_default,
+    serialize:   custom_serialize_default,
+    deserialize: custom_deserialize_default
+};
+
+static value copy_obj( obj_st *some_obj )
+{
+    CAMLparam0();
+    CAMLlocal1(v);
+    v = caml_alloc_custom( &amp;objst_custom_ops, sizeof(obj_st), 0, 1);
+    memcpy( Data_custom_val(v), some_obj, sizeof(obj_st) );
+    CAMLreturn(v);
+}
+
+CAMLprim value
+get_finalized_obj( value d, value i, value c )
+{
+    CAMLparam3( d, i, c );
+    CAMLlocal1(ml_obj);
+
+    obj_st my_obj;
+    my_obj.d = Double_val(d);
+    my_obj.i = Int_val(i);
+    my_obj.c = Int_val(c);
+
+    ml_obj = copy_obj( &amp;my_obj );
+
+    CAMLreturn(ml_obj);
+}
+
+CAMLprim value
+access_obj( value v )
+{
+    obj_st * my_obj;
+    my_obj = (obj_st *) Data_custom_val(v);
+    printf(" d: %g\n i: %d\n c: %c\n",
+            my_obj-&gt;d,
+            my_obj-&gt;i,
+            my_obj-&gt;c );
+    return Val_unit;
+}
+</pre>
+
+<pre>
+type obj
+external new_obj: float -&gt; int -&gt; char -&gt; obj = "get_finalized_obj"
+external dump_obj: obj -&gt; unit = "access_obj"
+</pre>
+
+  <div>
+    The values obtained by the function <code>new_abs</code> won't need
+    an explicite free as in the previous paragraph
+    <a href="#ref_ptr">Pointers to C structures</a>,
+    OCaml will finalise these values when the garbage collection will occur.
+  </div>
+
+<pre>
+# let a = Array.init 20 (fun i -&gt; new_obj (float i) i 'A') in
+  dump_obj a.(9);
+  ;;
+ d: 9
+ i: 9
+ c: A
+- : unit = ()
+</pre>
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_custfinal"><span>Custom Finalisation</span></h3>
+
+
+  <div>
+    Very often C structures contain allocated members, in such case
+    you have to use a custom finalisation function to free these members.<br />
+    You can see this in the exemple below which is very close to the previous
+    example.
+    Here the member <code>str</code> of the C structure is allocated, and needs
+    to be freed in the custom finalisation function:
+  </div>
+
+<pre>
+typedef struct _fobj {
+    double d;
+    int i;
+    char * str;
+} fobj;
+
+void finalize_fobj( value v )
+{
+    fobj * my_obj;
+    my_obj = (fobj *) Data_custom_val(v);
+    free( my_obj-&gt;str );
+    puts("fobj freed done");
+}
+
+static struct custom_operations fobj_custom_ops = {
+    identifier: "fobj handling",
+    finalize:  finalize_fobj,
+    compare:     custom_compare_default,
+    hash:        custom_hash_default,
+    serialize:   custom_serialize_default,
+    deserialize: custom_deserialize_default
+};
+
+static value copy_fobj( fobj *some_obj )
+{
+    CAMLparam0();
+    CAMLlocal1(v);
+    v = caml_alloc_custom( &amp;fobj_custom_ops, sizeof(fobj), 0, 1);
+    memcpy( Data_custom_val(v), some_obj, sizeof(fobj) );
+    CAMLreturn(v);
+}
+
+CAMLprim value
+get_finalized_fobj( value d, value i, value str )
+{
+    CAMLparam3( d, i, str );
+    CAMLlocal1(ml_obj);
+    int len;
+    fobj my_obj;
+
+    my_obj.d = Double_val(d);
+    my_obj.i = Int_val(i);
+
+    len = caml_string_length(str) + 1;
+    my_obj.str = malloc( len * sizeof(char) );
+    memcpy( my_obj.str, String_val(str), len );
+
+    ml_obj = copy_fobj( &amp;my_obj );
+
+    CAMLreturn(ml_obj);
+}
+
+CAMLprim value
+access_fobj( value v )
+{
+    fobj * my_obj;
+    my_obj = (fobj *) Data_custom_val(v);
+    printf(" d: %g\n i: %d\n str: %s\n",
+            my_obj-&gt;d,
+            my_obj-&gt;i,
+            my_obj-&gt;str );
+    return Val_unit;
+}
+</pre>
+
+<pre>
+type fobj
+external new_fobj: float -&gt; int -&gt; string -&gt; fobj = "get_finalized_fobj"
+external dump_fobj: fobj -&gt; unit = "access_fobj"
+</pre>
+
+  <div>
+    You can see when values are finalised with the <code>printf()</code> message.
+    In the script below calling <code>Gc.full_major</code> will produce the
+    finalisation:
+  </div>
+
+<pre>
+let () =
+  begin
+    let f i = new_fobj (float i) i (String.make i '.') in
+    let a = Array.init 20 f in
+    dump_fobj a.(9);
+  end;
+  Gc.full_major ();
+  print_endline "end test";
+;;
+</pre>
+
+
+  <div>
+    You can find more informations about the
+
+    <span class="for_screen">
+      <a href="http://caml.inria.fr/pub/docs/manual-ocaml-4.00/manual033.html#s:custom"
+      >custom_operations structure</a>
+    </span>
+
+    <span class="for_print">
+      custom_operations structure
+      on the page<br />
+      <a href="#"
+      >http://caml.inria.fr/pub/docs/manual-ocaml-4.00/manual033.html#s:custom</a>
+      in section <strong>19.9.1</strong>
+    </span>
+
+    in the offical manual.<br />
+    This structure can be used too for other custom operations
+    like <em>serialisation</em> and so on.
+  </div>
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_constvrnt"><span>Variants with arguments</span></h3>
+
+
+  <div>
+    Now the case of variants with parameters, as in this example:
+  </div>
+
+<pre>
+
+type pvar =
+  | P0_a
+  | P1_a of int
+  | P2_a of int * int
+  | P0_b
+  | P1_b of int
+  | P2_b of int * int
+
+external handle_pvar: pvar -&gt; unit = "param_variant"
+
+</pre>
+
+  <div>
+    OCaml values seen from on the C side, can be divised in two cathegories,
+    longs and blocks. Booleans, characters, integers, and in the present case
+    scalar variants are represented as a C long. Other types are blocks.
+    It is possible to test from which cathegory belongs a value with these macros:
+  </div>
+<pre>
+  Is_long(v)
+  Is_block(v)
+</pre>
+  <div>
+    So you can use these to test if a variant is a scalar, or if it has parameters.
+  </div>
+
+<pre>
+CAMLprim value
+param_variant( value v )
+{
+    if (Is_long(v))
+    {
+        switch (Int_val(v))
+        {
+            case 0: printf("P0_a\n"); break;
+            case 1: printf("P0_b\n"); break;
+            default: caml_failwith("variant handling bug");
+        }
+    }
+    else // (Is_block(v))
+    {
+        switch (Tag_val(v))
+        {
+        case 0: printf("P1_a(%d)\n",     Int_val(Field(v,0)) ); break;
+        case 1: printf("P2_a(%d, %d)\n", Int_val(Field(v,0)), Int_val(Field(v,1)) ); break;
+        case 2: printf("P1_b(%d)\n",     Int_val(Field(v,0)) ); break;
+        case 3: printf("P2_b(%d, %d)\n", Int_val(Field(v,0)), Int_val(Field(v,1)) ); break;
+        default: caml_failwith("variant handling bug");
+        }
+    }
+    return Val_unit;
+}
+</pre>
+
+  <div>
+    Here you can notice that the constructor of variants with arguments can
+    be handled with the macro <code>Tag_val(v)</code>. Also be careful with
+    the numbers to switch on, scalars and blocks are numbered separately as
+    you can see in this example.
+  </div>
+
+<pre>
+#load "funs.cma" ;;
+open Funs ;;
+
+let () =
+  handle_pvar (P0_a);
+  handle_pvar (P0_b);
+  handle_pvar (P1_a(21));
+  handle_pvar (P1_b(27));
+  handle_pvar (P2_a(30, 34));
+  handle_pvar (P2_b(70, 74));
+;;
+</pre>
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_option"><span>The type 'a option</span></h3>
+
+<pre>
+type 'a option = None | Some of 'a
+</pre>
+
+  <div>
+    The type <code>'a option</code> is nothing more than a variant with
+    one argument (as seen in the previous section), but here is the code
+    as quick reference:
+  </div>
+
+<pre>
+#define Val_none Val_int(0)
+
+static value
+Val_some( value v )
+{   
+    CAMLparam1( v );
+    CAMLlocal1( some );
+    some = caml_alloc(1, 0);
+    Store_field( some, 0, v );
+    CAMLreturn( some );
+}
+</pre>
+
+<pre>
+CAMLprim value
+rand_int_option( value unit )
+{
+    int d = random() % 4;
+    if (d)
+      return Val_some( Val_int(d) );
+    else
+      return Val_none;
+}
+</pre>
+
+<pre>
+external rand_int: unit -&gt; int option = "rand_int_option"
+</pre>
+
+<pre>
+# Array.init 10 (fun _ -&gt; rand_int()) ;;
+[|Some 3; None; Some 1; None; Some 3; Some 3; Some 2; None; None; Some 3|]
+</pre>
+
+  <div>
+    and in the opposite way:
+  </div>
+
+<pre>
+external say: string option -&gt; unit = "maybe_say"
+</pre>
+<pre>
+#define Some_val(v) Field(v,0)
+
+CAMLprim value
+maybe_say( value speech )
+{
+    if (speech == Val_none)
+        printf("Nothing\n");
+    else
+        printf("Something: %s\n", String_val(Some_val(speech)) );
+    return Val_unit;
+}
+</pre>
+
+<pre>
+# say None ;;
+Nothing
+- : unit = ()
+
+# say (Some "Camelus bactrianus") ;;
+Something: Camelus bactrianus
+- : unit = ()
+</pre>
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_optlabel"><span>Optional labeled parameter</span></h3>
+
+  <div>
+    In a very close way, you can put optional parameters using labels:
+  </div>
+
+<pre>
+external say_lbl: ?speech:string -&gt; unit -&gt; unit = "maybe_say_label"
+</pre>
+
+  <div>
+    Note that here the type is <code>string</code> and not
+    <code>string option</code>,
+    and that from the C side it is seen as a <code>string option</code>.
+  </div>
+
+<pre>
+CAMLprim value
+maybe_say_label( value speech, value unit )
+{
+    if (speech == Val_none)
+        printf("Nothing\n");
+    else
+        printf("Something: %s\n", String_val(Some_val(speech)) );
+    return Val_unit;
+}
+</pre>
+
+  <div>
+    You will then often need to add a unit parameter at the end of the parameters
+    list, which also need to be added in the C function even if it is not used.
+  </div>
+
+<pre>
+# say_lbl () ;;
+Nothing
+- : unit = ()
+
+# say_lbl ~speech:"le chameau songeur" () ;;
+Something: le chameau songeur
+- : unit = ()
+</pre>
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_plmvrnt"><span>Polymorphic Variants</span></h3>
+
+<pre>
+type plm_var = [
+  | `plm_A
+  | `plm_B
+  | `plm_C
+  ]
+
+external plm_variant: plm_var -&gt; unit = "polymorphic_variant"
+</pre>
+
+  <div>
+    The C representation of a polymorphic variant can by retrieved
+    with a function that computes its hash value:
+  </div>
+
+<pre>
+CAMLprim value
+polymorphic_variant( value v )
+{
+    if (v == caml_hash_variant("plm_A"))  puts("polymorphic variant A");
+    if (v == caml_hash_variant("plm_B"))  puts("polymorphic variant B");
+    if (v == caml_hash_variant("plm_C"))  puts("polymorphic variant C");
+    return Val_unit;
+}
+</pre>
+
+<pre>
+let () =
+  plm_variant `plm_A;
+  plm_variant `plm_B;
+  plm_variant `plm_C;
+;;
+</pre>
+
+  <div>
+    If performance is an issue, instead of make a call to
+    <code>caml_hash_variant()</code>
+    each time, what you can do is to get its result for each variant, and create
+    constants which you use in a switch:
+  </div>
+
+<pre>
+#include &lt;caml/mlvalues.h&gt;
+#include &lt;stdio.h&gt;
+
+int main()
+{
+    printf("#define  MLVAR_plm_A  (%d)\n", caml_hash_variant("plm_A") );
+    printf("#define  MLVAR_plm_B  (%d)\n", caml_hash_variant("plm_B") );
+    printf("#define  MLVAR_plm_C  (%d)\n", caml_hash_variant("plm_C") );
+    return 0;
+}
+</pre>
+
+  <div>
+    Which you can compile with:
+  </div>
+
+<pre>
+&gt; empty.ml
+ocamlc -o empty.o -output-obj empty.ml
+ocamlc -c variant.c
+gcc -o variant.exe variant.o empty.o -L"`ocamlc -where`" -lcamlrun -lm -lcurses
+</pre>
+
+  <div>
+    <code>./variant.exe</code> will output this result:
+  </div>
+
+<pre>
+#define  MLVAR_plm_A   (-1993467801)
+#define  MLVAR_plm_B   (-1993467799)
+#define  MLVAR_plm_C   (-1993467797)
+</pre>
+
+  <div>
+    Which you can then include at the beginning of your C code,
+    then you can replace the previous function <code>polymorphic_variant()</code> by:
+  </div>
+
+<pre>
+CAMLprim value
+polymorphic_variant( value v )
+{
+    switch (v)
+    {
+        case MLVAR_plm_A:  puts("polymorphic variant A");  break;
+        case MLVAR_plm_C:  puts("polymorphic variant B");  break;
+        case MLVAR_plm_D:  puts("polymorphic variant C");  break;
+        default:
+            caml_failwith("unrecognised polymorphic variant");
+    }
+    return Val_unit;
+}
+</pre>
+
+  <hr />
+
+
+  <div>
+    And another way to get the same defines:
+  </div>
+
+<pre>
+CAMLprim value
+print_polymorphic_variant_val( value v )
+{
+    printf("%d", (long) v );
+    fflush(stdout);
+    return Val_unit;
+}
+</pre>
+<pre>
+external pmvar_print_i: pmvar -&gt; unit = "print_polymorphic_variant_val"
+
+let () =
+  let p = Printf.printf in
+  p "#define  MLVAR_plm_A \t %!";  (pmvar_print_i `plm_A);  p "\n%!";
+  p "#define  MLVAR_plm_B \t %!";  (pmvar_print_i `plm_B);  p "\n%!";
+  p "#define  MLVAR_plm_C \t %!";  (pmvar_print_i `plm_C);  p "\n%!";
+;;
+</pre>
+
+  <div>
+    Notice the flush of the stdout channels on the two sides after each
+    strings (in OCaml flush is achieved by <code>"%!"</code>),
+    this is because the stdout of OCaml and C are two different channels that
+    are not synchronised.
+  </div>
+
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_linklib"><span>Linking against a library</span></h3>
+
+  <div>
+    Now imagine that you want to use a C library in the C part,
+    let's say a fictitious library called "MyLib", which is compiled
+    in C programs this way:<br />
+    <code>cc -o my_prog -L/lib/path -lMyLib my_prog.c </code><br />
+    In this case the argument <code>-lMyLib</code> will have to be
+    inserted while compiling the module, as shown below:
+  </div>
+
+<pre>
+dllwrap_stubs.so: wrap.o
+        ocamlmklib  -o  wrap_stubs  $&lt;  \
+            -L/lib/path  -lMyLib
+
+funs.cmxa:  funs.cmx  dllwrap_stubs.so
+        ocamlopt -a  -o $@  $&lt;  -cclib -lwrap_stubs \
+            -ccopt -L/lib/path  \
+            -cclib -lMyLib
+
+funs.cma:  funs.cmo  dllwrap_stubs.so
+        ocamlc -a  -o $@  $&lt;  -dllib -lwrap_stubs \
+            -ccopt -L/lib/path  \
+            -cclib -lMyLib
+</pre>
+
+  <div>
+    For the native code module, the directives have to be preceded
+    by <code>-cclib</code> for the linker, and <code>-ccopt</code> for
+    the compiler and linker.<br />
+    Note the use of <code>-dllib</code> for ocamlc.
+  </div>
+
+  <div>
+    Read the related manual pages for more informations:
+
+    <span class="for_screen">
+      <a href="http://caml.inria.fr/pub/docs/manual-ocaml-4.00/manual022.html#htoc115"
+      >ocamlc</a>,
+    </span>
+
+    <span class="for_print">
+      <br />the page about <strong>ocamlc</strong>
+      <a href="#"
+      >http://caml.inria.fr/pub/docs/manual-ocaml-4.00/manual022.html</a>
+      in <strong>Chapter 8</strong>, and<br />
+    </span>
+
+
+    <span class="for_screen">
+      <a href="http://caml.inria.fr/pub/docs/manual-ocaml-4.00/manual025.html#htoc132"
+      >ocamlopt</a>.
+    </span>
+
+    <span class="for_print">
+      the page about <strong>ocamlopt</strong>
+      <a href="#"
+      >http://caml.inria.fr/pub/docs/manual-ocaml-4.00/manual025.html</a>
+      in <strong>Chapter 11</strong>.
+    </span>
+
+
+  </div>
+
+
+<!--
+<pre>
+doc: funs.mli
+        if [ ! -d doc ]; then mkdir doc ; fi
+        ocamldoc -html -colorize-code -d doc $&lt;
+
+clean:
+        rm -f *.[oa] *.so *.cm[ixoa] *.cmxa *~ doc/*.{html,css}
+
+# install 
+
+PREFIX = "`ocamlc -where`/funs"
+
+DIST_FILES=\
+    funs.a         \
+    funs.cmi       \
+    funs.cma       \
+    funs.cmxa      \
+    libwrap_stubs.a
+
+SO_DIST_FILES=\
+    dllwrap_stubs.so
+
+
+install: $(DIST_FILES)  $(SO_DIST_FILES)
+        if [ ! -d $(PREFIX) ]; then install -d $(PREFIX) ; fi
+
+        install -m 0755  \
+                $(SO_DIST_FILES)  \
+                $(PREFIX)/
+
+        install -m 0644        \
+                $(DIST_FILES)  \
+                $(PREFIX)/
+</pre>
+-->
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_mlfromc"><span>Call Caml functions from C</span></h3>
+
+
+  <div>
+    To call caml functions from C, you have to give a string that identifies
+    each caml functions with  <code>Callback.register</code>.
+    You can then retrieve this caml function from C with
+    <code>caml_named_value("ID")</code>.
+    And you can cache the call to <code>caml_named_value()</code>,
+    as you can see in the C code below, with a <code>static</code> variable.
+    But you still have to test if it is equal to <code>NULL</code> in case
+    the caml garbage collector has freed it.
+  </div>
+<pre>
+let print_hello () =
+  print_endline "Hello World";
+;;
+
+let () =
+  Callback.register "Hello callback" print_hello;
+;;
+</pre>
+
+<pre>
+#include &lt;caml/callback.h&gt;
+
+void hello_closure()
+{
+    static value * closure_f = NULL;
+    if (closure_f == NULL) {
+        closure_f = caml_named_value("Hello callback");
+    }
+    caml_callback(*closure_f, Val_unit);
+}
+</pre>
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_bootfromc"><span>Start-up from C</span></h3>
+
+
+  <div>
+    If you want to make your main program from C, which will
+    call caml parts, you can do it as below,
+  </div>
+
+  <div>
+    file <code>"ml_part.ml"</code>:
+  </div>
+<pre>
+let print_hello () =
+  print_endline "Hello World";
+;;
+
+let () =
+  Callback.register "Hello callback" print_hello;
+;;
+</pre>
+
+  <div>
+    file <code>"main.c"</code>:
+  </div>
+<pre>
+#include &lt;caml/mlvalues.h&gt;
+#include &lt;caml/callback.h&gt;
+
+void hello_closure()
+{
+    static value * closure_f = NULL;
+    if (closure_f == NULL) {
+        closure_f = caml_named_value("Hello callback");
+    }
+    caml_callback(*closure_f, Val_unit);
+}
+
+int main(int argc, char **argv)
+{
+    caml_main(argv);
+    hello_closure();
+    return 0;
+}
+</pre>
+  <div>
+    In the <code>main</code> function the first instruction have to be
+    <code>caml_main(argv)</code> in order to init the caml part of the program.
+    All the caml instructions at the root level (for exemple
+    <code>print_endline&nbsp;"something"&nbsp;;;</code>, and everything defined under
+    <code>let&nbsp;()&nbsp;=&nbsp;(*&nbsp;code&nbsp;*)&nbsp;;;</code>)
+    will be evaluated and executed at this moment.
+  </div>
+
+  <div>
+    Compilation:
+  </div>
+<pre>
+ocamlopt -output-obj ml_part.ml -o ml_part_obj.o
+
+gcc -c main.c  -I"`ocamlc -where`"
+
+gcc -o prog.opt  \
+        main.o  ml_part_obj.o   \
+        -L"`ocamlc -where`"     \
+        -lm -ldl -lasmrun
+</pre>
+
+  <div>
+    The last line mentions the <code>-lm</code> and <code>-ldl</code> libraries,
+    as can be found by:<br />
+    <code>grep NATIVECCLIBS "`ocamlc -where`/Makefile.config"</code>
+  </div>
+
+  <div>
+    So for portability issue with your Makefile,
+    it is possible to replace the two arguments <code>-lm -ldl</code>
+    by the variable <code>$(NATIVECCLIBS)</code>.
+    To achieve this you just need to include the
+    file <code>`ocamlc -where`/Makefile.config</code> as below:
+  </div>
+
+<pre>
+OCAML_DIR = $(shell ocamlc -where)
+ -include  $(OCAML_DIR)/Makefile.config
+
+prog.opt: main.o  ml_part_obj.o
+        gcc -o $@  $^   \
+            -L"$(OCAML_DIR)"  \
+            $(NATIVECCLIBS) -lasmrun
+</pre>
+
+  <div>
+    The related sections in the OCaml manual are here:
+    <br />
+
+    <span class="for_screen">
+      <a href="http://caml.inria.fr/pub/docs/manual-ocaml-4.00/manual033.html#htoc281"
+      >19.7.4 &nbsp;Main program in C</a>, and
+      <br />
+      <a href="http://caml.inria.fr/pub/docs/manual-ocaml-4.00/manual033.html#htoc282"
+      >19.7.5 &nbsp;Embedding the OCaml code in the C code</a>.
+    </span>
+
+    <span class="for_print">
+      sections <strong>19.7.4 &nbsp;Main program in C</strong>, and
+      <strong>19.7.5 &nbsp;Embedding the OCaml code in the C code</strong>
+      at <em>Chapter 19</em> page<br />
+      <a href="#"
+      >http://caml.inria.fr/pub/docs/manual-ocaml-4.00/manual033.html</a>
+    </span>
+
+  </div>
+
+
+  <hr style="margin-top:2.4em;" />
+
+  <h3 id="ref_cplusplus"><span>Mixing with C++</span></h3>
+
+
+  <div>Contents of file <strong>mymod_stubs.cc</strong>:</div>
+<pre>
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+extern "C" {
+#include &lt;caml/memory.h&gt;
+#include &lt;caml/mlvalues.h&gt;
+}
+
+extern "C" value my_hello_cc (value v_str) {
+  CAMLparam1 (v_str);
+
+  std::cout &lt;&lt; "Hello " &lt;&lt; String_val(v_str) &lt;&lt; "!\n";
+
+  CAMLreturn (Val_unit);
+}
+</pre>
+
+  <div>Contents of file <strong>mymod.ml</strong>:</div>
+<pre>
+external my_hello: string -&gt; unit = "my_hello_cc"
+</pre>
+
+  <div>Contents of file <strong>caller.ml</strong>:</div>
+<pre>
+let _ =
+  Mymod.my_hello "Blue Camel";
+;;
+</pre>
+
+  <div>compile to native code with:</div>
+<pre>
+g++ -o mymod_stubs.o -I`ocamlc -where` -c mymod_stubs.cc
+ocamlopt -c mymod.ml
+ocamlmklib -o mymod mymod_stubs.o
+ocamlmklib -o mymod mymod.cmx
+
+ocamlopt -I . -cclib -lstdc++ mymod.cmxa caller.ml -o caller.opt
+</pre>
+
+  <div>then call it:</div>
+<pre>
+% ./caller.opt 
+Hello Blue Camel!
+</pre>
+
+
+  <div>now the compilation for bytecode:</div>
+<pre>
+g++ -o mymod_stubs.o -I`ocamlc -where` -c mymod_stubs.cc
+ocamlc -c mymod.ml
+ocamlmklib -o mymod -lstdc++ mymod_stubs.o
+ocamlmklib -o mymod  mymod.cmo
+
+ocamlc -I . mymod.cma  caller.ml  -o caller.byte
+</pre>
+
+  <div>then call it:</div>
+<!--
+% ./caller.byte
+Fatal error: cannot load shared library dllfoo
+Reason: dllfoo.so: cannot open shared object file: No such file or directory
+-->
+<!-- If you know how to resolve this path problem please send me an email -->
+<pre>
+% ocaml mymod.cma caller.ml
+Hello Blue Camel!
+
+% ocamlrun -I . caller.byte
+Hello Blue Camel!
+</pre>
+
+
+  <div>
+    This section about C++ was greatly inspired by the tutorial by
+    <em>Anne Pacalet</em>
+    (in French) which you can find
+
+    <span class="for_screen">
+      <a href="http://anne-pacalet.developpez.com/tutoriels/ocaml/interface-c-ou-cpp-et-ocaml/"
+      >here</a> or
+      <a href="http://www-sop.inria.fr/everest/personnel/Anne.Pacalet/camltop.php"
+      >there</a>.
+    </span>
+
+    <span class="for_print">
+      on one of these web page:
+      <br /><a href="#"
+>http://anne-pacalet.developpez.com/tutoriels/ocaml/interface-c-ou-cpp-et-ocaml/</a>
+      <br /><a href="#"
+>http://www-sop.inria.fr/everest/personnel/Anne.Pacalet/camltop.php</a>
+    </span>
+  </div>
+
+
+<!--
+  <hr style="margin-top:2.4em;" />
+
+  <div id="ref_misc">
+  </div>
+-->
+
+
+  <!-- ========================================================= -->
+
+  <hr />
+
+  <h3 id="ref_mswindows"><span>MS Windows</span></h3>
+
+
+  <div>
+    Here is below a non-exhaustive list of differences between a real
+    Linux/Unix environment and a Cygwin/MingW environment with protz's OCaml:
+  </div>
+
+  <ul>
+
+    <li>
+      the C stub will have the <code>.dll</code> filename extension
+      instead of <code>.so</code>
+    </li>
+
+    <li>
+      <code>ocamlc -where</code>
+      returns
+      <code>C:\OCaml\lib</code>
+      but Cygwin needs file separators to be like
+      <code>C:/OCaml/lib</code>
+    </li>
+
+    <li>
+      no need to add a <code>.exe</code> file extension,
+      the compiler will transparently do this for us
+    </li>
+
+    <li>
+      using protz's ocaml we can define the C compiler as:
+      <code>export CC="/bin/i686-w64-mingw32-gcc"</code>
+      because protz's ocaml uses
+      <a href='http://www.mingw.org/'>MingW</a>'s toolchain.
+    </li>
+
+  </ul>
+
+<pre>
+</pre>
+
+
+  <!-- ========================================================= -->
+
+  <hr style="margin-top:2.4em;" />
+
+  <h3 id="ref_conclusion"><span>Conclusion, going further</span></h3>
+
+
+  <div>
+    This was an introduction tutorial, for more complete details, refer to
+    the official OCaml manual
+
+    <span class="for_screen">
+      <a href="http://caml.inria.fr/pub/docs/manual-ocaml-4.07/intfc.html"
+      >on the page about this subject</a>.
+    </span>
+
+    <span class="for_print">
+      at Chapter 19 <em>Interfacing C with OCaml</em>, page:<br />
+      <a href="#"
+      >http://caml.inria.fr/pub/docs/manual-ocaml-4.07/intfc.html</a>
+    </span>
+  </div>
+
+  <div>
+    If there are questions that have not found an answer on this page
+    nor in the official manual,
+    <span class="for_screen">
+      you can join the
+      <a href="https://ocaml.org/community/mailing_lists.html"
+      >ocaml</a>
+      mailing list to find help.
+    </span>
+    <span class="for_print">
+      you can join the <strong>ocaml</strong>
+      mailing list to find help, at this address:<br />
+      <a href="#">https://ocaml.org/community/mailing_lists.html</a>
+    </span>
+  </div>
+
+  <div>
+    You may also find examples to follow from the
+    <span class="for_screen">
+      other ocaml bindings
+      <a href="https://opam.ocaml.org/packages/"
+      >registered in the OPAM</a>.
+    </span>
+    <span class="for_print">
+      <strong>other ocaml bindings</strong>
+      registered in the OPAM:<br />
+      <a href="#">https://opam.ocaml.org/packages/</a>
+    </span>
+  </div>
+
+  <div>
+    In the French language, there is also these 2 pages on the Epita's
+    wiki:<br/>
+    <span class="for_screen">
+      <a href="http://wiki-prog.infoprepa.epita.fr/index.php/20110307:TP:C:OCaml"
+        >20110307:TP:C:OCaml</a><br/>
+      <a href="http://wiki-prog.infoprepa.epita.fr/index.php/Programmation:C:OCaml"
+        >Programmation:C:OCaml</a>
+    </span>
+    <span class="for_print">
+      <a href="#"
+        >http://wiki-prog.infoprepa.epita.fr/index.php/20110307:TP:C:OCaml</a><br/>
+      <a href="#"
+        >http://wiki-prog.infoprepa.epita.fr/index.php/Programmation:C:OCaml</a>
+    </span>
+  </div>
+
+  <div>
+    And I don't know if it's worth (I never used it), but just be aware that
+    SWIG provides
+    <span class="for_screen">
+      <a href="http://www.swig.org/Doc4.0/Ocaml.html">support for OCaml</a>.
+    </span>
+    <span class="for_print">
+      <strong>support for OCaml</strong>:<br />
+      <a href="#">http://www.swig.org/Doc4.0/Ocaml.html</a>
+    </span>
+  </div>
+
+  <div>
+    The RealWorldOCaml book also provides documentation about
+    
+    <span class="for_screen">
+      <a href="https://dev.realworldocaml.org/foreign-function-interface.html"
+        >Foreign Function Interface</a>.
+    </span>
+    <span class="for_print">
+      <strong>Foreign Function Interface</strong>:<br />
+      <a href="#">https://dev.realworldocaml.org/foreign-function-interface.html</a>
+    </span>
+  </div>
+
+  <div>
+    Brendan Long wrote an article
+    <span class="for_screen">
+      <a href="https://www.brendanlong.com/easy-mistakes-when-writing-ocaml-c-bindings.html"
+        >Easy mistakes when writing OCaml C bindings</a>.
+    </span>
+    <span class="for_print">
+      <strong>Easy mistakes when writing OCaml C bindings</strong>:<br />
+      <a href="#">https://www.brendanlong.com/easy-mistakes-when-writing-ocaml-c-bindings.html</a>
+    </span>
+  </div>
+
+
+  <!-- ========================================================= -->
+
+  <hr style="margin-top:2.4em;" />
+
+  <h3 id="ref_version"><span>Version of this document</span></h3>
+
+  <div>
+    2019-10-30
+  </div>
+
+
+  <hr style="margin-top:2.4em;" />
+
+  <div>
+    If you have saved this document, you can check for up-dates or
+    corrections from
+    <span class="for_screen">
+      <a href="http://www.linux-nantes.org/%7Efmonnier/OCaml/ocaml-wrapping-c.html"
+      >its original location on the web</a>.
+    </span>
+    <span class="for_print">
+      <strong>its original location on the web</strong>:<br />
+      <a href="#"
+      >http://www.linux-nantes.org/%7Efmonnier/OCaml/ocaml-wrapping-c.html</a>
+    </span>
+  </div>
+
+
+  <!-- ========================================================= -->
+
+  <hr style="margin-top:2.4em;" />
+
+  <div id="ref_licence">
+    &copy; 2007-2019 Florent Monnier<br />
+    You can use this document according to the terms of either one of
+    these licenses:<br />
+    <ul class="for_screen">
+      <li>
+        <a href="http://www.gnu.org/licenses/fdl.html"
+        >GNU/FDL license</a>, or
+      </li>
+      <li>
+        <a href="http://creativecommons.org/licenses/by-sa/2.5/"
+        >CC-by-sa license</a>
+      </li>
+    </ul>
+
+    <span class="for_print">
+      <strong>GNU/FDL license</strong>: &nbsp;
+      <a href="#"
+      >http://www.gnu.org/licenses/fdl.html</a>
+      <br />
+      or
+      <br />
+      <strong>CC-by-sa license</strong>: &nbsp;
+      <a href="#"
+      >http://creativecommons.org/licenses/by-sa/2.5/</a>
+      <br />
+    </span>
+
+    Which means basically that you can redistribute this document with or without
+    modifications, as long as you keep the copyright and the license.<br />
+    Thanks to Eric Norige, for corrections of the English.<br />
+    This document has been modified after Eric Norige English corrections,
+    please write to me for other corrections.
+  </div>
+
+  <hr />
+  <div id="footer">
+    You can send any kind of comments
+    <span class="for_screen">
+      to: <div id="contact">&nbsp;</div>
+    </span>
+    <span class="for_print">
+      to me. My email is
+      <code>monnier.florent at gmail dot com</code>
+    </span>
+  </div>
+
+
+  <div style="margin-top: 2em; border:0;" class="for_screen">
+    <!--
+    <a href="http://caml.inria.fr/ocaml/index.html" title="OCaml website"
+    ><img src="http://caml.inria.fr/pub/logos/caml.80x30.gif"
+      alt="The Caml Language" style="border: none;" /></a>
+    -->
+    <a href="http://ocaml.org/" title="OCaml website"
+      ><img src="./ocaml_logo_round_B72.png"
+         alt="The OCaml Language" style="border: none;" /></a>
+  </div>
+
+</body>
+</html>
+<!-- vim: sw=2 sts=2 ts=2 et
+ -->

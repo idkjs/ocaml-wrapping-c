@@ -1,4 +1,7 @@
-# Hello World
+# [How to wrap C functions to OCaml](http://www.linux-nantes.org/~fmonnier/OCaml/ocaml-wrapping-c.html)
+
+
+## Hello World
 
 The two files "hello.ml" and "hello_stubs.c":
 external print_hello: unit -> unit = "caml_print_hello"
@@ -33,7 +36,7 @@ $ ocamlopt -o hello.opt -pp "refmt -p ml" -impl hello.re hello_stubs.c
 $ ./hello.opt 
 Hello
 ```
-# Quick Start
+## Quick Start
 
 The two files "hello.ml" and "hello_stubs.c":
 external print_hello: unit -> unit = "caml_print_hello"
