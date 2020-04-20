@@ -77,3 +77,18 @@ make funs.cmx
 ocamlopt wrap.o funs.cmx -o myapp
 ./myapp
 ```
+
+## Callback
+
+```sh
+$ make
+$ ./main.opt 
+Hello
+```
+
+## Resources
+
+http://www.cybermanual.com/how-to-wrap-c-functions-to-ocaml.html
+https://anne-pacalet.developpez.com/tutoriels/ocaml/interface-c-ou-cpp-et-ocaml/
+
+http://dev.realworldocaml.org/foreign-function-interface.html#example-a-terminal-interface
